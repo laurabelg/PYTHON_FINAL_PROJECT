@@ -1,29 +1,25 @@
-"""Loading the files directly from Our World in Data repository and  by using webscraping."""
+"""Loading the files directly from Our World in Data and ISO-3166 repositories by using web scraping techniques."""
 
 import requests
 import pandas as pd
 
-# Define URLs.
-url_energy = ("https://github.com/owid/energy-data/blob/master/owid-energy-data.csv")
-url_country = ("https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes/blob/master/all/all.csv")
-
-
-stops = requests.get(f"{base_url}/{stop_suffix}", headers=headers) 
-
-
-
 def fetch_data(url: str) -> str:
-    """Fetch a URL and the return content of the associated HTTP response."""
-    if not url.endswith("csv"):
-        raise ValueError(...)
+    """Fetch a URL and return the content of the associated HTTP response."""
+    if not url.endswith(".csv"):
+        raise ValueError("URL must point to a CSV file.")
+    
     response = requests.get(url)
-    return response.text
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch data: {response.status_code}")
+    
+    return response.text  # Return the content from the url as text
 
-def read_data(fetch_url: str) -> pd.DataFrame:
-    """Load the csv file from the url and convert it as a pandas dataframe."""
-    df = pd.read_csv(fetch_url)
+def read_data(csv_content: str) -> pd.DataFrame:
+    """Convert CSV text content into a pandas DataFrame."""
+    df = pd.read_csv(csv_content)
     return df
 
 def load_data(url: str) -> pd.DataFrame:
+    """Fetch CSV data from URL and return it as a DataFrame."""
     raw_data = fetch_data(url)
-    read_data(raw_data)
+    return read_data(raw_data)
