@@ -1,3 +1,5 @@
+"Creating the regression models."
+
 import pandas as pd
 import numpy as np
 from linearmodels.panel import PanelOLS, PooledOLS
@@ -8,32 +10,24 @@ def regression_models(df:pd.DataFrame):
 
     # Define the dataframe as panel data
     df["year"] = pd.to_numeric(df["year"], errors="coerce")  # Convert year to numeric
-    panel = df.set_index(["country", "year"])
-
-    # Shorten variable names
-    panel = panel.rename(columns={
-        "low_carbon_elec_per_capita": "lowcarbon_elec",
-        "fossil_elec_per_capita": "fossil_elec"
-    })
-
-    # Apply logarithmic transformations to the variables of interest
-    panel["log_gdp_per_capita"] = np.log(panel["gdp_per_capita"])
-    panel["log_lowcarbon_elec"] = np.log(panel["lowcarbon_elec"]+ 1) # To avoid log(0)
-    panel["log_fossil_elec"] = np.log(panel["fossil_elec"]+ 1) # To avoid log(0)
+    df.set_index(["country", "year"], inplace=True)
 
     # Model Pooled OLS
-    pooled_model = PooledOLS.from_formula("log_gdp_per_capita ~ log_lowcarbon_elec + log_fossil_elec", data=panel)
+    pooled_model = PooledOLS.from_formula("log_gdp_per_capita ~ log_lowcarbon_elec + log_fossil_elec", data=df)
     pooled_results = pooled_model.fit()
+    df["residuals_OLS"] = pooled_results.resids.reindex(df.index)
 
     # Model Fixed Effects (country)
     fe_i_model = PanelOLS.from_formula("log_gdp_per_capita ~ log_lowcarbon_elec + log_fossil_elec + EntityEffects",
-                                    data=panel)
+                                    data=df)
     fe_i_results = fe_i_model.fit()
+    df["residuals_fe_i"] = fe_i_results.resids.reindex(df.index)
 
     # Model Fixed Effects (year)
     fe_t_model = PanelOLS.from_formula("log_gdp_per_capita ~ log_lowcarbon_elec + log_fossil_elec + TimeEffects",
-                                    data=panel)
+                                    data=df)
     fe_t_results = fe_t_model.fit()
+    df["residuals_fe_t"] = fe_t_results.resids.reindex(df.index)
 
     # Create a DataFrame with the coefficients, standard errors and p-values
     results_df = pd.DataFrame({

@@ -7,7 +7,7 @@ import seaborn as sns
 import scipy.stats as stats
 
 # Define variables of interest for the modelling
-variables = ["gdp_per_capita", "fossil_elec_per_capita", "low_carbon_elec_per_capita"]
+variables = ["gdp_per_capita", "fossil_elec", "lowcarbon_elec"]
 
 def describe(df: pd.DataFrame) -> pd.DataFrame:
     """Summarize the main descriptive statistics."""
@@ -61,11 +61,6 @@ def plot_histograms(df: pd.DataFrame):
 
 def plot_scatterplots(df: pd.DataFrame):
     """Plot scatterplots for low-carbon electricity and fossil fuels electricity over GDP per capita."""
-    
-    # Apply logarithmic transformations to the variables of interest
-    df["log_fossil_elec_per_capita"] = np.log(df["fossil_elec_per_capita"])
-    df["log_low_carbon_elec_per_capita"] = np.log(df["low_carbon_elec_per_capita"])
-    df["log_gdp_per_capita"] = np.log(df["gdp_per_capita"])
 
     # Define the style of the graph
     sns.set_style("whitegrid")
@@ -76,12 +71,12 @@ def plot_scatterplots(df: pd.DataFrame):
     # Graph 1: Fossil fuels vs GDP per capita
     sns.scatterplot(
         data=df,
-        x="log_fossil_elec_per_capita",
+        x="log_fossil_elec",
         y="log_gdp_per_capita",
         hue="region",
         ax=axes[0],
         palette="tab10",
-        legend=False  
+        legend=True  
     )
     axes[0].set_xlabel("Fossil fuels electricity generation (log)")
     axes[0].set_ylabel("GDP per capita (log)")
@@ -90,12 +85,12 @@ def plot_scatterplots(df: pd.DataFrame):
     # Graph 2: Low-carbon electricity vs GDP per capita
     sns.scatterplot(
         data=df,
-        x="log_low_carbon_elec_per_capita",
+        x="log_lowcarbon_elec",
         y="log_gdp_per_capita",
         hue="region",
         ax=axes[1],
         palette="tab10",
-        legend=False  
+        legend=True 
     )
     axes[1].set_xlabel("Low-carbon electricity generation (log)")
     axes[1].set_ylabel("GDP per capita (log)")
@@ -125,8 +120,8 @@ def correlation_matrix(df: pd.DataFrame):
 
     # Select variables of interest for the correlation matrix - excluding category variables
     numeric_variables = ["gdp_per_capita",
-                        "fossil_elec_per_capita",
-                        "low_carbon_elec_per_capita",
+                        "fossil_elec",
+                        "lowcarbon_elec",
                         "per_capita_electricity",
                         "greenhouse_gas_emissions_per_capita",
                         "carbon_intensity_elec",
@@ -175,3 +170,16 @@ def correlation_matrix(df: pd.DataFrame):
 
     # Show graphics
     plt.show()
+
+def balance_panel(df:pd.DataFrame):
+    """Exclude countries with no data for the variables of interest."""
+
+    # Identified countries which have at least one year without data or 0 on the variables of interest
+    countries_to_remove = df.groupby("country")[variables].apply(lambda x: (x == 0).any()).any(axis=1)
+
+    # Filtrer only by the countries with complete data
+    cleaned_df = df[~df["country"].isin(countries_to_remove[countries_to_remove].index)]
+
+    print(f"It was removed {countries_to_remove.sum()} countries with at least one year with missing data or 0 on the variables of interest.")
+
+    return cleaned_df

@@ -1,6 +1,7 @@
 """Cleaning the energy and country database to create the main database to analyze."""
 
 import pandas as pd
+import numpy as np
 
 def table_energy(df: pd.DataFrame) -> pd.DataFrame:
     """Clean and preprocess the energy dataset."""
@@ -15,22 +16,38 @@ def table_energy(df: pd.DataFrame) -> pd.DataFrame:
     ]
     energy_df = df[selected_columns].copy()
 
+    # Replace NaN with 0
+    energy_df = energy_df.fillna(0)
+
     # Filter by countries with completed data from 2000 to 2022
     energy_df = energy_df[
         (energy_df["year"] >= 2000) & 
-        (energy_df["iso_code"] != "") &
-        (~energy_df["gdp"].isna()) & (~energy_df["gdp"].eq("")) &
-        (~energy_df["low_carbon_elec_per_capita"].isna()) & (~energy_df["low_carbon_elec_per_capita"].eq("")) &
-        (~energy_df["fossil_elec_per_capita"].isna()) & (~energy_df["fossil_elec_per_capita"].eq(""))
+        (energy_df["iso_code"] != "") & 
+        (energy_df["iso_code"] != 0) &
+        (~energy_df["gdp"].isna()) & 
+        (energy_df["gdp"] != "") & 
+        (energy_df["gdp"] != 0) &
+        (~energy_df["low_carbon_elec_per_capita"].isna()) & 
+        (energy_df["low_carbon_elec_per_capita"] != "") &
+        (~energy_df["fossil_elec_per_capita"].isna()) & 
+        (energy_df["fossil_elec_per_capita"] != 0)
     ]
+
+    # Shorten variable names
+    energy_df = energy_df.rename(columns={
+        "low_carbon_elec_per_capita": "lowcarbon_elec",
+        "fossil_elec_per_capita": "fossil_elec"
+    })
 
     # Create additional variables
     energy_df["gdp_per_capita"] = energy_df["gdp"] / energy_df["population"]
     energy_df["greenhouse_gas_emissions_per_capita"] = (energy_df["greenhouse_gas_emissions"] / energy_df["population"]) * 1000000  # Convert Megatones to tones
     energy_df["electricity_demand_per_capita"] = energy_df["electricity_demand"] / energy_df["population"]
 
-    # Replace NaN with 0
-    energy_df = energy_df.fillna(0)
+    # Apply logarithmic transformations to the variables of interest
+    energy_df["log_gdp_per_capita"] = np.log(energy_df["gdp_per_capita"])
+    energy_df["log_lowcarbon_elec"] = np.log(energy_df["lowcarbon_elec"]+ 1) # To avoid log(0)
+    energy_df["log_fossil_elec"] = np.log(energy_df["fossil_elec"]+ 1) # To avoid log(0)
 
     return energy_df
 
