@@ -144,32 +144,34 @@ def correlation_matrix(df: pd.DataFrame):
     p_matrix = calculate_p_values(df_num_var)
 
     # Setting the figure
-    plt.figure(figsize=(10, 8))
-    cmap = sns.color_palette("RdBu_r", as_cmap=True)
+    fig, ax = plt.subplots(figsize=(10, 8))
 
     # Agregate the asterisk for the significant variables (p > 0.01)
     for i in range(cor_matrix.shape[0]):
         for j in range(i):
             if p_matrix.iloc[i, j] < 0.01:  # Show "*" if p < 0.01
-                plt.text(j + 0.5, i + 0.5, "*", ha='center', va='center', color='white')
+                plt.text(j + 0.5, i + 0.5, "*", ha='left', va='bottom', color='white', fontsize=12, fontweight='bold')
 
     # Create the heatmap
     mask = np.triu(np.ones_like(cor_matrix, dtype=bool))  # Hide the upper triangle
     sns.heatmap(
         cor_matrix,
         mask=mask,
-        cmap=cmap,
-        annot=True,
+        cmap="RdBu_r",
+        annot=True, 
+        center=0,
+        linewidths=0.5, 
+        cbar_kws={"shrink": 0.7}, 
+        ax=ax,
+        annot_kws={"size": 10, "weight": "bold"},
         fmt=".2f",
-        linewidths=0.5,
-        cbar_kws={"shrink": 0.7},
         vmin=-1, vmax=1
     )
 
     # Labels
     plt.xticks(rotation=45, ha="right", fontsize=10, color="black")
-    plt.yticks(fontsize=10, color="black")
-    plt.title("Correlation Matrix", fontsize=12, fontweight="bold")
+    plt.yticks(rotation=0)
+    plt.title("Correlation Matrix", fontsize=14, fontweight="bold")
 
     # Show graphics
     plt.show()
